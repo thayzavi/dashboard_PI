@@ -4,6 +4,33 @@ import requests
 import altair as alt
 import pytz
 import time
+import pyotp
+
+PASSWORD = "FelipeCareca123" 
+SECRET_KEY = "UOEPNZZIU3K4J2TMQA4JSIGCF6RHM4O4" 
+
+totp = pyotp.TOTP(SECRET_KEY)
+
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+def login_screen():
+    st.title(" Login necessário")
+
+    password = st.text_input("Senha:", type="password")
+    code = st.text_input("Código MFA (Google Authenticator):")
+
+    if st.button("Entrar"):
+        if password == PASSWORD and totp.verify(code):
+            st.session_state.authenticated = True
+            st.success("Acesso liberado!")
+            st.rerun()
+        else:
+            st.error("Senha ou código MFA inválido.")
+
+if not st.session_state.authenticated:
+    login_screen()
+    st.stop()
 
 API_URL = "https://backend-pi-o2zm.onrender.com/all"
 
