@@ -4,3 +4,5 @@ requests
 altair
 pytz
 pyotp
+numpy 
+dotenv
