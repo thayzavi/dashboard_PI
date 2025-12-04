@@ -36,7 +36,7 @@ def login_screen():
 
     st.title("Login necessário")
 
-    password = st.text_input("Senha:", type="password")
+    password = st.text_input("Usúario:")
     code = st.text_input("Código MFA:")
 
     if st.button("Entrar"):
