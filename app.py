@@ -132,7 +132,7 @@ def dashboard_page():
             str(nivel).strip().lower().replace("í","i").replace("é","e")
         )
 
-        if nivel_limpo == "enchente":
+        if nivel_limpo == "enchentes":
             alerta_box.error(f"🚨 ALERTA MÁXIMO — ENCHENTES!\nDistância: **{distancia} cm**")
         elif nivel_limpo in ("medio",):
             alerta_box.warning(f"⚠️ Nível Médio — Distância: **{distancia} cm**")
@@ -250,4 +250,5 @@ elif st.session_state.page == "Logs" and st.session_state.role == "admin":
 
 else:
     st.error("Acesso negado.")
+
 
