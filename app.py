@@ -108,7 +108,10 @@ def carregar_dados():
         df = df.sort_values(by="Data", ascending=False).reset_index(drop=True)
         df["DataHoraStr"] = df["Data"].dt.strftime("%d/%m %H:%M:%S")
 
-        return df
+        df["level"] = df["level"].apply(normalizar_level)
+
+    return df
+
     except Exception as e:
         st.error(f"Erro ao carregar dados: {e}")
         return pd.DataFrame()
@@ -140,6 +143,20 @@ def dashboard_page():
             alerta_box.success(f"🟢 Normal — Distância: **{distancia} cm**")
         else:
             alerta_box.info(f"ℹ️ Nível Desconhecido ({nivel}) — {distancia} cm")
+
+    def normalizar_level(valor):
+    if not isinstance(valor, str):
+        return "desconhecido"
+
+    valor = valor.strip().lower().replace("í","i").replace("é","e")
+
+    if valor in ["enchente", "enchentes"]:
+        return "enchentes"
+    if valor in ["medio", "médio", "medios"]:
+        return "medio"
+    if valor == "normal":
+        return "normal"
+    return "desconhecido"
 
     # MÉTRICAS
     ultimo = df.iloc[0]
