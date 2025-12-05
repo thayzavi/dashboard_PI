@@ -27,16 +27,42 @@ if "role" not in st.session_state:
 if "page" not in st.session_state:
     st.session_state.page = "Dashboard"
 
+
+# ==============================
+# FUNÇÃO NORMALIZAR LEVEL
+# ==============================
+def normalizar_level(valor):
+    if not isinstance(valor, str):
+        return "desconhecido"
+
+    valor = (
+        valor.strip()
+        .lower()
+        .replace("í", "i")
+        .replace("é", "e")
+    )
+
+    if valor in ["enchente", "enchentes"]:
+        return "enchentes"
+
+    if valor in ["medio", "médio", "medios"]:
+        return "medio"
+
+    if valor == "normal":
+        return "normal"
+
+    return "desconhecido"
+
+
 # ==============================
 # FUNÇÃO DE LOGIN
 # ==============================
 def login_screen():
 
     st.image("logo.png", width=250)
-
     st.title("Login necessário")
 
-    password = st.text_input("Usúario:")
+    password = st.text_input("Usuário:")
     code = st.text_input("Código MFA:")
 
     if st.button("Entrar"):
@@ -56,12 +82,14 @@ def login_screen():
         else:
             st.error("Código MFA inválido.")
 
+
 # =====================================
-# SE O USUÁRIO NÃO ESTIVER LOGADO → LOGIN
+# SE O USUÁRIO NÃO ESTIVER LOGADO
 # =====================================
 if not st.session_state.authenticated:
     login_screen()
     st.stop()
+
 
 # =====================================
 # SIDEBAR COM NAVEGAÇÃO
@@ -81,6 +109,7 @@ if st.sidebar.button("🚪 Sair"):
     st.session_state.page = "Dashboard"
     st.rerun()
 
+
 # =====================================
 # CONFIGURAÇÕES GERAIS
 # =====================================
@@ -93,6 +122,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+
 @st.cache_data(ttl=10)
 def carregar_dados():
     try:
@@ -103,14 +133,13 @@ def carregar_dados():
         if df.empty:
             return pd.DataFrame()
 
+        df["level"] = df["level"].apply(normalizar_level)
         df["createdAt"] = pd.to_datetime(df["createdAt"], utc=True)
         df["Data"] = df["createdAt"].dt.tz_convert(BRAZIL_TIMEZONE)
         df = df.sort_values(by="Data", ascending=False).reset_index(drop=True)
         df["DataHoraStr"] = df["Data"].dt.strftime("%d/%m %H:%M:%S")
 
-        df["level"] = df["level"].apply(normalizar_level)
-
-    return df
+        return df
 
     except Exception as e:
         st.error(f"Erro ao carregar dados: {e}")
@@ -118,7 +147,7 @@ def carregar_dados():
 
 
 # =====================================
-# DASHBOARD COMPLETO (AGORA DENTRO DA FUNÇÃO)
+# DASHBOARD
 # =====================================
 def dashboard_page():
     st.title("🌧️ Dashboard - Monitoramento de Enchentes")
@@ -136,27 +165,21 @@ def dashboard_page():
         )
 
         if nivel_limpo == "enchentes":
-            alerta_box.error(f"🚨 ALERTA MÁXIMO — ENCHENTES!\nDistância: **{distancia} cm**")
-        elif nivel_limpo in ("medio",):
-            alerta_box.warning(f"⚠️ Nível Médio — Distância: **{distancia} cm**")
+            alerta_box.error(
+                f"🚨 ALERTA MÁXIMO — ENCHENTES!\nDistância: **{distancia} cm**"
+            )
+        elif nivel_limpo == "medio":
+            alerta_box.warning(
+                f"⚠️ Nível Médio — Distância: **{distancia} cm**"
+            )
         elif nivel_limpo == "normal":
-            alerta_box.success(f"🟢 Normal — Distância: **{distancia} cm**")
+            alerta_box.success(
+                f"🟢 Normal — Distância: **{distancia} cm**"
+            )
         else:
-            alerta_box.info(f"ℹ️ Nível Desconhecido ({nivel}) — {distancia} cm")
-
-    def normalizar_level(valor):
-    if not isinstance(valor, str):
-        return "desconhecido"
-
-    valor = valor.strip().lower().replace("í","i").replace("é","e")
-
-    if valor in ["enchente", "enchentes"]:
-        return "enchentes"
-    if valor in ["medio", "médio", "medios"]:
-        return "medio"
-    if valor == "normal":
-        return "normal"
-    return "desconhecido"
+            alerta_box.info(
+                f"ℹ️ Nível Desconhecido ({nivel}) — {distancia} cm"
+            )
 
     # MÉTRICAS
     ultimo = df.iloc[0]
@@ -190,7 +213,7 @@ def dashboard_page():
     )
     st.altair_chart(chart, use_container_width=True)
 
-    # ====================== GRÁFICO DE FREQUÊNCIA =========================
+    # Frequência
     st.markdown("---")
     st.subheader("📊 Frequência por Nível de Alerta")
 
@@ -205,13 +228,11 @@ def dashboard_page():
             y="Quantidade:Q",
             color="Nível:N"
         )
-        .properties(title="Ocorrências por Nível de Alerta")
     )
 
     st.altair_chart(graf_barras, use_container_width=True)
 
-
-    # --- VARIAÇÃO ---
+    # Variação
     df["variacao"] = df["distancia"].diff() * -1
     df["MA_3"] = df["distancia"].rolling(3).mean()
     df["MA_7"] = df["distancia"].rolling(7).mean()
@@ -220,7 +241,6 @@ def dashboard_page():
     coef = np.polyfit(df["timestamp"], df["distancia"], 1)
     trend = np.poly1d(coef)
     df["tendencia"] = trend(df["timestamp"])
-
 
     st.markdown("---")
     st.subheader("📈 Médias móveis")
@@ -236,13 +256,9 @@ def dashboard_page():
     st.subheader("📈 Tendência")
 
     graf_tendencia = (
-        alt.Chart(df)
-        .mark_line(point=True)
-        .encode(x="Data:T", y="distancia:Q")
+        alt.Chart(df).mark_line(point=True).encode(x="Data:T", y="distancia:Q")
         +
-        alt.Chart(df)
-        .mark_line(color="red")
-        .encode(x="Data:T", y="tendencia:Q")
+        alt.Chart(df).mark_line(color="red").encode(x="Data:T", y="tendencia:Q")
     )
     st.altair_chart(graf_tendencia, use_container_width=True)
 
@@ -257,7 +273,7 @@ def dashboard_page():
 
 
 # =====================================
-# LOGS — APENAS ADMINISTRADOR
+# LOGS (ADMIN)
 # =====================================
 def logs_page():
     st.title("📜 Logs de Auditoria")
@@ -278,7 +294,7 @@ def logs_page():
 
 
 # ================================
-# RENDERIZAÇÃO DA PÁGINA
+# RENDERIZAÇÃO
 # ================================
 if st.session_state.page == "Dashboard":
     dashboard_page()
@@ -288,5 +304,3 @@ elif st.session_state.page == "Logs" and st.session_state.role == "admin":
 
 else:
     st.error("Acesso negado.")
-
-
