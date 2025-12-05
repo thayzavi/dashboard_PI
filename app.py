@@ -173,6 +173,27 @@ def dashboard_page():
     )
     st.altair_chart(chart, use_container_width=True)
 
+    # ====================== GRÁFICO DE FREQUÊNCIA =========================
+    st.markdown("---")
+    st.subheader("📊 Frequência por Nível de Alerta")
+
+    freq = df["level"].value_counts().reset_index()
+    freq.columns = ["Nível", "Quantidade"]
+
+    graf_barras = (
+        alt.Chart(freq)
+        .mark_bar()
+        .encode(
+            x="Nível:N",
+            y="Quantidade:Q",
+            color="Nível:N"
+        )
+        .properties(title="Ocorrências por Nível de Alerta")
+    )
+
+    st.altair_chart(graf_barras, use_container_width=True)
+
+
     # --- VARIAÇÃO ---
     df["variacao"] = df["distancia"].diff() * -1
     df["MA_3"] = df["distancia"].rolling(3).mean()
